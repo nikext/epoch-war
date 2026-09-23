@@ -68,6 +68,24 @@ check('ranged units stop at range and shoot over their own front line', () => {
   assert(enemy.hp < enemy.maxHp, 'the slinger never hit');
 });
 
+check('a column of ranged units all get in range, not just the one in front', () => {
+  // At the enemy wall…
+  let w = world();
+  w.sides[1].baseHp = w.sides[1].baseMaxHp = 1e9;
+  let column = [0, 1, 2].map((k) => place(w, 0, 'slinger', 60 - k * 3));
+  run(w, 30);
+  for (const u of column) assert(u.state === 'attack', `slinger at ${progressOf(u).toFixed(1)} is ${u.state}, not shooting the wall`);
+  // …and behind a front line locked in a fight.
+  w = world();
+  const front = place(w, 0, 'clubber', 40);
+  const foe = place(w, 1, 'clubber', 40);
+  for (const u of [front, foe]) u.hp = u.maxHp = 1e9;
+  foe.stun = 1e9;
+  column = [0, 1, 2, 3].map((k) => place(w, 0, 'slinger', 36 - k * 2));
+  run(w, 20);
+  for (const u of column) assert(u.state === 'attack', `slinger at ${progressOf(u).toFixed(1)} is ${u.state}, not in the fight`);
+});
+
 check('melee cannot hit aircraft but ranged units can', () => {
   const w = world();
   for (const s of w.sides) w.debugSetAge(s.id, 4);

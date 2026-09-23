@@ -634,6 +634,7 @@ export class World {
       hitAge: 99,
       hitFrac: 0,
       converted: false,
+      pushed: false,
       alive: true,
       file: this.fileCounter[side]!++,
     };
@@ -702,16 +703,20 @@ export class World {
           }
         }
 
-        if (target) {
+        // Ranged units hold at the edge of their reach, but not when that leaves
+        // the friends queued behind them out of range of everything.
+        const pushed = u.pushed;
+        u.pushed = false;
+        if (target && !pushed) {
           u.state = 'attack';
           continue;
         }
-        this.move(u, mine, i, foes, dt);
+        this.move(u, mine, i, foes, dt, target !== null, pushed);
       }
     }
   }
 
-  private move(u: Unit, mine: Unit[], index: number, foes: Unit[], dt: number): void {
+  private move(u: Unit, mine: Unit[], index: number, foes: Unit[], dt: number, fighting: boolean, pushed: boolean): void {
     const s = this.sides[u.side];
     const p = progressOf(u);
     const size = u.def.size;
@@ -725,11 +730,15 @@ export class World {
     }
 
     const front = isFrontLiner(u.def);
+    let ahead: Unit | null = null;
+    let behindAhead = Infinity;
     for (let j = index - 1; j >= 0; j--) {
       const a = mine[j]!;
       if (!a.alive || a.side !== u.side || a.def.layer !== u.def.layer) continue;
       if (front && !isFrontLiner(a.def)) continue;
-      limit = Math.min(limit, progressOf(a) - ((a.def.size + size) / 2) * SPACING);
+      ahead = a;
+      behindAhead = progressOf(a) - ((a.def.size + size) / 2) * SPACING;
+      limit = Math.min(limit, behindAhead);
       break;
     }
 
@@ -747,12 +756,14 @@ export class World {
     }
 
     const np = Math.max(p, Math.min(p + speed * dt, limit));
+    // Stuck on the friend ahead with nothing in reach (or passing a push along)? Ask it to make room.
+    if (ahead && np >= behindAhead - 1e-3 && (!fighting || pushed)) ahead.pushed = true;
     if (np > p + 1e-4) {
       u.stride += np - p;
       this.setProgress(u, np);
       u.state = 'walk';
     } else {
-      u.state = 'idle';
+      u.state = fighting ? 'attack' : 'idle';
     }
   }
 

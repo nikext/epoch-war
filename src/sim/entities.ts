@@ -38,6 +38,8 @@ export interface Unit {
   hitFrac: number;
   /** Whether the unit was hacked over from the other side. */
   converted: boolean;
+  /** A friend queued behind can't reach anything; step forward (still fighting) to make room. */
+  pushed: boolean;
   alive: boolean;
   /** Visual lane slot, stable for the unit's life. */
   file: number;
