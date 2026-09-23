@@ -89,11 +89,15 @@ tools/        rules tests, balance bench, screenshot tools
 
 ## Deploying (Google Cloud Run)
 
-The `Dockerfile` builds the static site and serves it with nginx on port 8080:
+The `Dockerfile` builds the static site and serves it with nginx on port 8080, with
+security headers (CSP, no framing) set in `nginx.conf`:
 
 ```bash
-gcloud run deploy epoch-war --source . --region europe-west6 --allow-unauthenticated --port 8080
+gcloud run deploy epoch-war --source . --region europe-west6 --allow-unauthenticated --port 8080 --max 3 --max-instances 3
 ```
+
+`--max 3` caps the service at three instances — plenty for static files, and it
+bounds what a flood of requests can cost.
 
 Any static host works too: upload `dist/` after `npm run build`.
 
