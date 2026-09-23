@@ -1,0 +1,20 @@
+// Dev: run a battle with the audio engine unlocked and check for errors.
+import { chromium } from 'playwright-core';
+import { readdirSync } from 'node:fs';
+const root = process.env.HOME + '/.cache/ms-playwright';
+const dir = readdirSync(root).find((d) => d.startsWith('chromium_headless_shell'));
+const browser = await chromium.launch({ executablePath: `${root}/${dir}/chrome-headless-shell-linux64/chrome-headless-shell`, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const page = await browser.newPage({ viewport: { width: 1000, height: 600 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });
+await page.goto('http://localhost:5180/?play=veteran&autopilot&age=4&turrets&quality=low', { waitUntil: 'load' });
+await page.waitForTimeout(1500);
+await page.mouse.click(500, 300);
+await page.keyboard.press('KeyM');
+await page.keyboard.press('KeyM');
+await page.waitForTimeout(8000);
+const info = await page.evaluate(() => { const a = window.__game.audio; return { state: a.ctx?.state, voices: a.voices, music: !!a.music, units: window.__game.world.units.length }; });
+console.log(JSON.stringify(info));
+console.log(errors.filter((e) => !e.includes('PCFSoft')).join('\n') || 'no errors');
+await browser.close();

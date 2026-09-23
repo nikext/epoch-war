@@ -1,0 +1,29 @@
+{
+  "name": "epoch-war",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A 3D lane-battle strategy game in the spirit of Age of War 1 & 2: evolve from the Stone Age to the Age of Intelligence.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "rolldown tools/rules-test.ts --format esm --file node_modules/.cache/rules-test.mjs && node node_modules/.cache/rules-test.mjs",
+    "bench": "rolldown tools/sim-bench.ts --format esm --file node_modules/.cache/sim-bench.mjs && node node_modules/.cache/sim-bench.mjs",
+    "shoot": "node tools/shoot.mjs"
+  },
+  "dependencies": {
+    "@fontsource/chakra-petch": "^5.3.0",
+    "@fontsource/russo-one": "^5.3.0",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/three": "^0.186.0",
+    "playwright-core": "^1.63.0",
+    "rolldown": "^1.2.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}
