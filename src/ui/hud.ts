@@ -237,7 +237,9 @@ export class Hud {
   reset(world: World): void {
     this.world = world;
     this.age = -1;
+    // A new war starts with no doctrines, which the cache above would read as "unchanged".
     this.lastDoctrines = ['', ''];
+    this.root.querySelectorAll('.doctrine-row').forEach((row) => (row.innerHTML = ''));
     el(this.root, '.intel').innerHTML = '';
     el(this.root, '.floaters').innerHTML = '';
     this.closePopover();
