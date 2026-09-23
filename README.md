@@ -2,9 +2,11 @@
 
 A 3D lane-battle strategy game in the spirit of the Flash classics **Age of War** and **Age of War 2**. Two walls face each other across a valley. You train troops, build turrets, and evolve through seven ages, from clubs and dinosaurs to robo-hounds, walking mechs and a superintelligence given a body.
 
-![A medieval cavalry clash](docs/screenshot.png)
+**Play it:** https://epoch-war-286937397059.europe-west6.run.app
 
-![The Age of Intelligence](docs/ai-age.png)
+![Epoch War: the Stone Age, Medieval, Industrial and Intelligence ages side by side](docs/post.jpg)
+
+![A Medieval Age battle with the full HUD: unit cards, turrets and the command panel](docs/screenshots/gameplay.jpg)
 
 ## What's in it
 
@@ -21,6 +23,17 @@ A 3D lane-battle strategy game in the spirit of the Flash classics **Age of War*
   - The **Singularity Project**, a win condition in the final age that you race the enemy for.
 - **The world evolves**: when a side advances an age, its half of the valley is repainted and re-propped in a wave from its wall. The sky moves from a Stone Age dawn to a neon night.
 - **Everything is procedural**. Every model is built in code from low-poly primitives, every animation is procedural, and every sound effect and all the music (a different style per age) are synthesized live with WebAudio. There are no third-party assets.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Meteor Shower falling on dinosaur riders in the Stone Age](docs/screenshots/stone-age-meteors.jpg) | ![Knights and crossbowmen storming a Medieval castle](docs/screenshots/medieval-siege.jpg) |
+| **Stone Age**: the Meteor Shower special lands on a line of trike riders. | **Medieval**: knights and crossbowmen storm the castle while its turrets fire back. |
+| ![Musketeers, cavalry and a field cannon at a Gunpowder Age fort](docs/screenshots/gunpowder-fort.jpg) | ![Biplanes and landships during a bomber run in the Industrial Age](docs/screenshots/industrial-air-raid.jpg) |
+| **Gunpowder**: cannon smoke at the walls of a star fort. | **Industrial**: biplanes duel overhead while landships grind together below. |
+| ![Gunships and tanks attacking a Modern base defended by CIWS turrets](docs/screenshots/modern-base-defense.jpg) | ![Walking mechs and robo-hounds trading lightning in the Age of Intelligence](docs/screenshots/age-of-intelligence.jpg) |
+| **Modern**: CIWS and missile turrets hold off gunships and tanks. | **Age of Intelligence**: mechs, robo-hounds and nano swarms trade lightning. |
 
 ## Running it
 
