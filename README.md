@@ -79,7 +79,7 @@ Dev-only URL flags (ignored in production builds):
 
 | Flag | Effect |
 | --- | --- |
-| `?gallery=<age>` | Model gallery: every unit of an age, both teams, cycling walk → attack → idle (`&die` for deaths) |
+| `?gallery=<age>` | Model gallery: every unit of an age, both teams, cycling walk → attack → idle (`&die` for deaths, `&turrets` for the age's turrets firing) |
 | `?play=<difficulty>` | Skip the menu and start a war (`recruit`, `veteran`, `general`, `impossible`) |
 | `?autopilot` | An AI plays your side too |
 | `?age=<n>` · `&turrets` | Jump both sides to an age (and fill their turret ledges) |

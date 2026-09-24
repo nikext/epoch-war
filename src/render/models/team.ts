@@ -17,9 +17,13 @@ export const TEAMS: [Team, Team] = [
   { id: 1, main: '#d63b33', dark: '#7c1d1b', light: '#ffa08c', glow: '#ff5040' },
 ];
 
+/** Things that fly carry no ground shadow in their colours. */
+const AIRBORNE = new Set(['flyer', 'swarm', 'hover']);
+
 export function finish(rig: RigBuilder, meta: Partial<ModelMeta> & Pick<ModelMeta, 'kind' | 'style'>): ModelTemplate {
+  const grounded = !AIRBORNE.has(meta.kind);
   return {
-    object: rig.build(staticMaterial),
+    object: rig.build(staticMaterial, true, grounded ? { ground: 0.3, groundHeight: 0.9 } : {}),
     meta: { hand: 'near', height: 2.1, strideLength: 1.5, ...meta },
   };
 }

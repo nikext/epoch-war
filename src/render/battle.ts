@@ -61,6 +61,7 @@ class UnitView {
 
   rebuild(now: number): void {
     this.scene.remove(this.inst.root);
+    this.inst.dispose();
     this.inst = new ModelInstance(unitTemplate(this.unit.def.model, this.unit.side));
     this.scene.add(this.inst.root);
     this.flip = dirOf(this.unit.side);
@@ -113,6 +114,7 @@ class UnitView {
       stunned: u.stun > 0 && this.deadT < 0,
       aim,
       seed: this.seed,
+      hitT: this.deadT < 0 ? u.hitAge : 99,
     });
 
     const uni = this.inst.material.userData.uniforms;
@@ -149,7 +151,7 @@ class UnitView {
 
   dispose(): void {
     this.scene.remove(this.inst.root);
-    this.inst.material.dispose();
+    this.inst.dispose();
   }
 }
 
@@ -253,7 +255,10 @@ class BaseView {
       const id = t ? t.def.id : null;
       if (id === this.turretIds[i]) continue;
       const old = this.turrets[i];
-      if (old) this.group.remove(old.root);
+      if (old) {
+        this.group.remove(old.root);
+        old.dispose();
+      }
       this.turrets[i] = null;
       this.turretIds[i] = id;
       if (t) {
@@ -287,6 +292,7 @@ class BaseView {
   dispose(): void {
     if (this.model) disposeTree(this.model.root);
     if (this.outgoing) disposeTree(this.outgoing.model.root);
+    for (const t of this.turrets) t?.dispose();
   }
 
   update(s: SideState, t: number, dt: number): void {
@@ -341,7 +347,7 @@ class BaseView {
       inst.root.position.x += (seat - inst.root.position.x) * Math.min(1, dt * 4);
       const pos = this.slotWorld(i, V1);
       const aim = Math.atan2(tur.aimY - pos.y, Math.max(1, Math.abs(tur.aimX - pos.x)));
-      inst.animate(Math.max(-1.2, Math.min(1.2, aim)), tur.fireAge, t, dt);
+      inst.animate(Math.max(-1.2, Math.min(1.2, aim)), tur.fireAge, t, dt, tur.def.interval);
     }
     // A burning wall.
     const hp = s.baseHp / s.baseMaxHp;

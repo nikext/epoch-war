@@ -64,7 +64,7 @@ function patch(material: THREE.MeshStandardMaterial, uniforms: ModelUniforms): v
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n${VERT_BODY}`);
+      .replace('#include <skinning_vertex>', `#include <skinning_vertex>\n${VERT_BODY}`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace(
@@ -91,7 +91,7 @@ function patch(material: THREE.MeshStandardMaterial, uniforms: ModelUniforms): v
         if (uDissolve > 0.0 && mwDissolveNoise < uDissolve + 0.07) totalEmissiveRadiance += uDissolveColor * 2.5;`,
       );
   };
-  material.customProgramCacheKey = () => 'epoch-model-v1';
+  material.customProgramCacheKey = () => 'epoch-model-v2';
 }
 
 function makeUniforms(): ModelUniforms {

@@ -65,7 +65,7 @@ export class Portraits {
     const inst = new ModelInstance(unitTemplate(def.model, side));
     inst.animate({ t: 0.4, dt: 1, stride: 0, moving: false, attackT: 99, windup: def.windup, interval: def.interval, deadT: -1, stunned: false, aim: 0, seed: 0.3 });
     const url = this.shoot(inst.root, def.cls === 'apex' ? 1.1 : 1.15);
-    inst.material.dispose();
+    inst.dispose();
     this.cache.set(key, url);
     return url;
   }
@@ -77,6 +77,7 @@ export class Portraits {
     const inst = new TurretInstance(turretTemplate(def.model, side));
     inst.animate(0.15, 99, 0, 1);
     const url = this.shoot(inst.root, 1.1);
+    inst.dispose();
     this.cache.set(key, url);
     return url;
   }

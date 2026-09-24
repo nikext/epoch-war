@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /**
  * Low-poly modelling kit. Every model in the game is assembled here from
@@ -32,6 +33,15 @@ export interface Surface {
 }
 
 export type Opts = Xform & Surface;
+
+export interface BlockOpts extends Opts {
+  /** Chamfer on every edge (metres). */
+  bevel?: number;
+  /** Scale of the top face: one number, or [x, z]. */
+  taper?: number | [number, number];
+  /** Slide the top face along x (a lean). */
+  shear?: number;
+}
 
 const tmpColor = new THREE.Color();
 const tmpMatrix = new THREE.Matrix4();
@@ -114,6 +124,41 @@ export class Part {
     return this.add(new THREE.SphereGeometry(r, o.ws ?? 8, o.hs ?? 6), color, o);
   }
 
+  /**
+   * A box with chamfered edges, optionally tapered or leaning at the top. The
+   * chamfers catch the light, so blocks read as solid shapes rather than flat
+   * cards — the workhorse for bodies, armour and machinery.
+   */
+  block(w: number, h: number, d: number, color: ColorLike, o: BlockOpts = {}): this {
+    const b = Math.min(o.bevel ?? Math.min(w, h, d) * 0.18, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3);
+    const tp = o.taper ?? 1;
+    const [tx, tz] = typeof tp === 'number' ? [tp, tp] : tp;
+    const shear = o.shear ?? 0;
+    const pts: THREE.Vector3[] = [];
+    for (const sy of [-1, 1]) {
+      const kx = sy > 0 ? tx : 1;
+      const kz = sy > 0 ? tz : 1;
+      const ox = sy > 0 ? shear : 0;
+      const hw = (w / 2) * kx;
+      const hd = (d / 2) * kz;
+      const bx = Math.min(b, hw * 0.9);
+      const bz = Math.min(b, hd * 0.9);
+      for (const sx of [-1, 1]) {
+        for (const sz of [-1, 1]) {
+          pts.push(new THREE.Vector3(ox + sx * hw, sy * (h / 2 - b), sz * (hd - bz)));
+          pts.push(new THREE.Vector3(ox + sx * (hw - bx), sy * (h / 2), sz * (hd - bz)));
+          pts.push(new THREE.Vector3(ox + sx * (hw - bx), sy * (h / 2 - b), sz * hd));
+        }
+      }
+    }
+    return this.add(new ConvexGeometry(pts), color, o);
+  }
+
+  /** The convex hull of a set of points. */
+  hull(points: [number, number, number][], color: ColorLike, o: Opts = {}): this {
+    return this.add(new ConvexGeometry(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))), color, o);
+  }
+
   /** Hemisphere (dome) opening downward. */
   dome(r: number, color: ColorLike, o: Opts & { ws?: number; hs?: number } = {}): this {
     return this.add(new THREE.SphereGeometry(r, o.ws ?? 10, o.hs ?? 5, 0, Math.PI * 2, 0, Math.PI / 2), color, o);
@@ -175,6 +220,34 @@ export class Part {
     return this;
   }
 
+  /**
+   * Darken the underside of every piece: each one grades from full colour at
+   * its top to (1 − amount) at its bottom, in its own frame. A cheap stand-in
+   * for ambient occlusion that gives flat-shaded parts a sense of volume.
+   * Glowing pieces are left alone.
+   */
+  occlude(amount: number): this {
+    for (const g of this.pieces) {
+      const pos = g.attributes.position!;
+      const col = g.attributes.color!;
+      const surf = g.attributes.surf!;
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        if (y < lo) lo = y;
+        if (y > hi) hi = y;
+      }
+      const span = Math.max(1e-4, hi - lo);
+      for (let i = 0; i < pos.count; i++) {
+        if (surf.getX(i) > 0) continue;
+        const f = 1 - amount * (1 - (pos.getY(i) - lo) / span);
+        col.setXYZ(i, col.getX(i) * f, col.getY(i) * f, col.getZ(i) * f);
+      }
+    }
+    return this;
+  }
+
   build(): THREE.BufferGeometry {
     if (this.pieces.length === 0) return new THREE.BufferGeometry();
     const merged = mergeGeometries(this.pieces, false);
@@ -187,28 +260,40 @@ export class Part {
   }
 }
 
+export interface RigShading {
+  /** How much each piece darkens toward its own underside (0..1). */
+  occlude?: number;
+  /** How much the model darkens toward the ground (0..1); 0 for fliers. */
+  ground?: number;
+  /** The height (rig space) at which the ground darkening has faded out. */
+  groundHeight?: number;
+}
+
 /**
  * A skeleton of named joints, each with its own Part. Used for every animated
- * model: humanoids, mounts, vehicles. build() produces a template Object3D
- * whose joints are findable by name after cloning.
+ * model: humanoids, mounts, vehicles, turrets. build() bakes every joint's
+ * part into one rigidly skinned mesh — joints become bones — so a whole model
+ * is a single draw call however many moving parts it has. Joints are findable
+ * by name after cloning (clone with SkeletonUtils so the bones rebind).
  */
 export class RigBuilder {
   readonly root = new THREE.Group();
-  private readonly joints = new Map<string, { group: THREE.Group; part: Part }>();
+  private readonly joints = new Map<string, { bone: THREE.Bone; part: Part }>();
 
   constructor(name = 'rig') {
     this.root.name = name;
   }
 
   joint(name: string, parent: string | null, x = 0, y = 0, z = 0): Part {
-    const group = new THREE.Group();
-    group.name = name;
-    group.position.set(x, y, z);
-    const parentGroup = parent ? this.joints.get(parent)?.group : this.root;
-    if (!parentGroup) throw new Error(`RigBuilder: unknown parent ${parent}`);
-    parentGroup.add(group);
+    if (this.joints.has(name)) throw new Error(`RigBuilder: duplicate joint ${name}`);
+    const bone = new THREE.Bone();
+    bone.name = name;
+    bone.position.set(x, y, z);
+    const parentObj = parent ? this.joints.get(parent)?.bone : this.root;
+    if (!parentObj) throw new Error(`RigBuilder: unknown parent ${parent}`);
+    parentObj.add(bone);
     const part = new Part();
-    this.joints.set(name, { group, part });
+    this.joints.set(name, { bone, part });
     return part;
   }
 
@@ -222,21 +307,72 @@ export class RigBuilder {
     return this.joints.has(name);
   }
 
-  group(name: string): THREE.Group {
+  group(name: string): THREE.Object3D {
     const j = this.joints.get(name);
     if (!j) throw new Error(`RigBuilder: unknown joint ${name}`);
-    return j.group;
+    return j.bone;
   }
 
-  build(material: THREE.Material, castShadow = true): THREE.Group {
-    for (const [name, { group, part }] of this.joints) {
+  build(material: THREE.Material, castShadow = true, shading: RigShading = {}): THREE.Group {
+    this.root.updateMatrixWorld(true);
+    const bones: THREE.Bone[] = [];
+    const geos: THREE.BufferGeometry[] = [];
+    const occlude = shading.occlude ?? 0.16;
+    for (const { bone, part } of this.joints.values()) {
+      const index = bones.length;
+      bones.push(bone);
       if (part.empty) continue;
-      const mesh = new THREE.Mesh(part.build(), material);
-      mesh.name = `${name}:mesh`;
-      mesh.castShadow = castShadow;
-      mesh.receiveShadow = false;
-      group.add(mesh);
+      if (occlude > 0) part.occlude(occlude);
+      const g = part.build();
+      g.applyMatrix4(bone.matrixWorld);
+      const n = g.attributes.position!.count;
+      const skinIndex = new Uint16Array(n * 4);
+      const skinWeight = new Float32Array(n * 4);
+      for (let i = 0; i < n; i++) {
+        skinIndex[i * 4] = index;
+        skinWeight[i * 4] = 1;
+      }
+      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndex, 4));
+      g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeight, 4));
+      geos.push(g);
     }
+    if (geos.length === 0) return this.root;
+    const geometry = mergeGeometries(geos, false);
+    if (!geometry) throw new Error('RigBuilder.build: incompatible parts');
+    for (const g of geos) g.dispose();
+
+    const ground = shading.ground ?? 0;
+    if (ground > 0) {
+      const h = shading.groundHeight ?? 1;
+      const pos = geometry.attributes.position!;
+      const col = geometry.attributes.color!;
+      const surf = geometry.attributes.surf!;
+      for (let i = 0; i < pos.count; i++) {
+        if (surf.getX(i) > 0) continue;
+        const t = Math.max(0, Math.min(1, pos.getY(i) / h));
+        const f = 1 - ground * (1 - t * t * (3 - 2 * t));
+        col.setXYZ(i, col.getX(i) * f, col.getY(i) * f, col.getZ(i) * f);
+      }
+    }
+
+    // Flat shading takes its normals from screen-space derivatives, so vertex
+    // normals are dead weight; without them, corners shared within a piece
+    // weld together and the mesh shrinks to a fraction of its vertices.
+    geometry.deleteAttribute('normal');
+    const welded = mergeVertices(geometry);
+    geometry.dispose();
+    welded.computeBoundingBox();
+    welded.computeBoundingSphere();
+    const mesh = new THREE.SkinnedMesh(welded, material);
+    mesh.name = 'skin';
+    mesh.castShadow = castShadow;
+    mesh.receiveShadow = false;
+    // Culling uses the rest pose, padded so swinging limbs and recoil stay inside it.
+    mesh.boundingBox = welded.boundingBox!.clone();
+    mesh.boundingSphere = welded.boundingSphere!.clone();
+    mesh.boundingSphere.radius = mesh.boundingSphere.radius * 1.35 + 1;
+    this.root.add(mesh);
+    mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
     return this.root;
   }
 }
