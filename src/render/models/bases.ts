@@ -180,7 +180,8 @@ function ledges(b: BaseBuilder, color: ColorLike, trim: ColorLike, kind: 'log' |
     const y = s.y - 0.15;
     if (kind === 'log') {
       for (let i = 0; i < 4; i++) p.cyl(0.13, 0.13, 2.2, color, { x: -0.9 + i * 0.3 + 0.6, y, z: s.z, rx: HALF_PI, seg: 6 });
-      p.box(0.12, 0.8, 0.12, trim, { x: 0.6, y: y - 0.45, z: s.z + 0.8, rz: 0.4 });
+      // The strut braces the outer end, clear of the ledges stacked beside this one.
+      p.box(0.12, 0.8, 0.12, trim, { x: 0.6, y: y - 0.45, z: s.z + Math.sign(s.z) * 0.8, rz: 0.4 });
     } else if (kind === 'stone') {
       p.box(2.0, 0.3, 2.0, color, { x: 0.1, y, z: s.z });
       p.box(2.1, 0.12, 2.1, trim, { x: 0.1, y: y - 0.2, z: s.z });

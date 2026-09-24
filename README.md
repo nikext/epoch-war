@@ -65,7 +65,7 @@ Kills pay gold and experience. Fill the experience bar to evolve. Your wall fall
 ## Development
 
 ```bash
-npm test                     # simulation rule checks (tools/rules-test.ts)
+npm test                     # simulation rule checks, then the turret fit check (tools/turret-fit.ts)
 npm run bench -- 10 veteran  # headless AI-vs-AI wars: game length, age timings, win rates
 npm run bench -- 12 general veteran   # difficulty A vs difficulty B
 npm run shoot -- "/?gallery=6" shots/g6.png   # screenshot the dev server (needs Playwright's headless shell)
@@ -83,6 +83,7 @@ Dev-only URL flags (ignored in production builds):
 | `?play=<difficulty>` | Skip the menu and start a war (`recruit`, `veteran`, `general`, `impossible`) |
 | `?autopilot` | An AI plays your side too |
 | `?age=<n>` · `&turrets` | Jump both sides to an age (and fill their turret ledges) |
+| `&set=<a>,<b>,<c>,<d>` | With `?age`, put any four turrets (from any age, by id or model) on both walls, lowest ledge first |
 | `?warmup=<s>` | Fast-forward the simulation before the first frame |
 | `?attract` · `?nohud` | Menu battle without the menu · hide the HUD |
 | `?cam=<x>` · `?dist=<d>` · `?quality=low` | Camera position / zoom / graphics preset |

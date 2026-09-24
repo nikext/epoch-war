@@ -176,6 +176,22 @@ export class Game {
           AGES[a]!.turrets.forEach((t, i) => this.world.buyTurret(s.id, i, t.id));
           this.world.buyTurret(s.id, 3, AGES[a]!.turrets[0]!.id);
         }
+        // `&set=trebuchet,flakCannon,…`: any four turrets, from any age, lowest ledge first.
+        const set = p.get('set');
+        if (set) {
+          while (this.world.buySlot(s.id) === 'ok') {
+            /* all four ledges */
+          }
+          set.split(',').slice(0, 4).forEach((name, slot) => {
+            const def = AGES.flatMap((x) => x.turrets).find((d) => d.id === name || d.model === name);
+            if (!def) return;
+            if (s.turrets[slot]) this.world.sellTurret(s.id, slot);
+            s.gold = 500000;
+            this.world.debugSetAge(s.id, def.age);
+            this.world.buyTurret(s.id, slot, def.id);
+          });
+          this.world.debugSetAge(s.id, a);
+        }
         s.gold = 50000;
       }
       this.battle.attach(this.world);

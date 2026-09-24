@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "rolldown tools/rules-test.ts --format esm --file node_modules/.cache/rules-test.mjs && node node_modules/.cache/rules-test.mjs",
+    "test": "rolldown tools/rules-test.ts --format esm --file node_modules/.cache/rules-test.mjs && node node_modules/.cache/rules-test.mjs && rolldown tools/turret-fit.ts --format esm --file node_modules/.cache/turret-fit.mjs && node node_modules/.cache/turret-fit.mjs",
     "bench": "rolldown tools/sim-bench.ts --format esm --file node_modules/.cache/sim-bench.mjs && node node_modules/.cache/sim-bench.mjs",
     "shoot": "node tools/shoot.mjs"
   },
